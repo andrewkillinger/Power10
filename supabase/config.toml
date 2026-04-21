@@ -1,0 +1,14 @@
+# Supabase project configuration.
+# Only the settings we care about are listed; Supabase fills in defaults for
+# everything else on deploy.
+
+project_id = "vpmvqzlcinfiwrfomthq"
+
+# The ingest-articles function is invoked by:
+#   - the Dashboard cron job (power10-ingest-hourly)
+#   - the maintainer's curl when priming the table
+# It accepts no user input (body is ignored) and does not return sensitive
+# data, so JWT verification is unnecessary and would only complicate
+# scheduling from pg_net / the Dashboard cron.
+[functions.ingest-articles]
+verify_jwt = false
