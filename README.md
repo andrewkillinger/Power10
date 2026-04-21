@@ -95,21 +95,23 @@ Helpers live in:
    ```bash
    npx supabase functions deploy ingest-articles
    ```
-5. Tell `pg_cron` where to POST. In the Supabase SQL editor:
-   ```sql
-   alter database postgres
-     set app.settings.ingest_url =
-       'https://vpmvqzlcinfiwrfomthq.functions.supabase.co/ingest-articles';
-   alter database postgres
-     set app.settings.ingest_token = '<your-service-role-jwt>';
-   ```
+5. **Schedule the hourly cron via the Supabase Dashboard** (not SQL —
+   managed Postgres blocks `alter database … set app.settings.*`):
+   - Dashboard → **Database → Cron Jobs** → **"Create a new cron job"**
+   - Name: `power10-ingest-hourly`
+   - Schedule: `5 * * * *`
+   - Type: **Supabase Edge Function**
+   - Function: **ingest-articles**
+   - Method: `POST`, Body: `{}`
+   - Save.
 6. Kick off the first ingestion run manually:
    ```bash
    npx supabase functions invoke ingest-articles --no-verify-jwt
    ```
    Then in SQL: `select count(*) from articles;` — you should see rows.
 
-From this point `pg_cron` POSTs the function every hour at `:05`.
+From this point the Dashboard cron job POSTs the function every hour
+at `:05`.
 
 ## Deploy frontend (Vercel)
 

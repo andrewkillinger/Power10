@@ -1,32 +1,23 @@
--- Hourly schedule for the ingest-articles Edge Function.
--- Uses pg_cron (scheduling) + pg_net (HTTP POST from Postgres).
+-- Hourly ingestion is scheduled via the Supabase Dashboard, NOT from SQL.
 --
--- Before this migration runs, the deployer must set two Supabase project
--- secrets via `supabase secrets set` so that pg_net can call the function:
---   app.settings.ingest_url   — e.g. https://<ref>.functions.supabase.co/ingest-articles
---   app.settings.ingest_token — the Supabase service-role JWT (used as Bearer)
+-- Supabase's managed Postgres does not allow `alter database … set
+-- app.settings.*` as the `postgres` role (error 42501), so the pg_cron
+-- approach that works on self-hosted Postgres isn't available here.
+-- Instead, use the Dashboard's built-in Cron feature — it handles auth
+-- to the Edge Function automatically and stores the token outside SQL.
 --
--- These are referenced at call-time through current_setting(...) so the
--- secrets never end up inside the migration file.
+-- Setup, one time only:
+--   1. Supabase Dashboard → Database → Cron Jobs → "Create a new cron job"
+--   2. Name:      power10-ingest-hourly
+--      Schedule: 5 * * * *
+--      Type:     "Supabase Edge Function"
+--      Function: ingest-articles
+--      Method:   POST
+--      Body:     {}
+--   3. Save. The job begins running at the next matching minute.
+--
+-- This migration is intentionally a no-op so `supabase db push` still
+-- succeeds cleanly. It exists only so future maintainers find this
+-- comment when they wonder where the cron lives.
 
-create extension if not exists pg_cron;
-create extension if not exists pg_net;
-
--- Drop any prior schedule with this name so re-running is idempotent.
-select cron.unschedule('power10-ingest-hourly')
-  where exists (select 1 from cron.job where jobname = 'power10-ingest-hourly');
-
-select cron.schedule(
-  'power10-ingest-hourly',
-  '5 * * * *',  -- 5 minutes past every hour (avoid top-of-hour contention)
-  $$
-  select net.http_post(
-    url := current_setting('app.settings.ingest_url', true),
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || current_setting('app.settings.ingest_token', true)
-    ),
-    body := '{}'::jsonb
-  );
-  $$
-);
+select 'Ingestion is scheduled via Supabase Dashboard → Database → Cron Jobs' as note;
