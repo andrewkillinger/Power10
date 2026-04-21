@@ -16,6 +16,27 @@
 import { DOMParser, type Element } from "https://deno.land/x/deno_dom@v0.1.46/deno-dom-wasm.ts";
 import { truncateSynopsis, type ParsedItem } from "./rss.ts";
 
+// A realistic desktop-Chrome identity. Sites like Axios and K-12 Dive
+// aggressively 403 anything that looks like a bot, so we pass the full
+// set of headers a normal browser would send.
+export const BROWSER_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
+    "(KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+  Accept:
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9",
+  "Accept-Encoding": "gzip, deflate, br",
+  "Upgrade-Insecure-Requests": "1",
+  "Sec-Ch-Ua": '"Chromium";v="129", "Not=A?Brand";v="8", "Google Chrome";v="129"',
+  "Sec-Ch-Ua-Mobile": "?0",
+  "Sec-Ch-Ua-Platform": '"macOS"',
+  "Sec-Fetch-Dest": "document",
+  "Sec-Fetch-Mode": "navigate",
+  "Sec-Fetch-Site": "none",
+  "Sec-Fetch-User": "?1",
+};
+
 export type ScrapeSelectors = {
   item: string;
   title: string;
@@ -72,12 +93,7 @@ export async function scrapeSource(
   selectors: ScrapeSelectors,
 ): Promise<ParsedItem[]> {
   const res = await fetch(url, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (compatible; Power10Bot/1.0; +https://power10.app)",
-      Accept:
-        "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    },
+    headers: BROWSER_HEADERS,
   });
   if (!res.ok) {
     throw new Error(`scrape ${url} → HTTP ${res.status}`);

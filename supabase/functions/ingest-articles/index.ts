@@ -9,15 +9,21 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { parseFeed, truncateSynopsis, type ParsedItem } from "./rss.ts";
-import { scrapeSource, type ScrapeSelectors } from "./scrape.ts";
+import { BROWSER_HEADERS, scrapeSource, type ScrapeSelectors } from "./scrape.ts";
+
+type RssFilteredSelector = {
+  // Regex tested against author, title, and summary of each RSS item.
+  // If it matches any of those fields, the item is kept.
+  byline_regex: string;
+};
 
 type SourceRow = {
   id: string;
   journalist_id: string;
   outlet: string;
-  kind: "rss" | "scrape";
+  kind: "rss" | "scrape" | "rss_filtered";
   url: string;
-  selector: ScrapeSelectors | null;
+  selector: ScrapeSelectors | RssFilteredSelector | null;
   enabled: boolean;
 };
 
@@ -41,14 +47,24 @@ const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
 async function fetchRss(url: string): Promise<ParsedItem[]> {
   const res = await fetch(url, {
     headers: {
-      "User-Agent":
-        "Mozilla/5.0 (compatible; Power10Bot/1.0; +https://power10.app)",
-      Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml",
+      ...BROWSER_HEADERS,
+      Accept:
+        "application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.5",
     },
   });
   if (!res.ok) throw new Error(`rss ${url} → HTTP ${res.status}`);
   const xml = await res.text();
   return parseFeed(xml);
+}
+
+function filterByByline(items: ParsedItem[], byline_regex: string): ParsedItem[] {
+  const re = new RegExp(byline_regex, "i");
+  return items.filter((it) => {
+    if (it.author && re.test(it.author)) return true;
+    if (it.title && re.test(it.title)) return true;
+    if (it.summary && re.test(it.summary)) return true;
+    return false;
+  });
 }
 
 function normalizeToArticleRows(
@@ -77,9 +93,16 @@ async function ingestOne(src: SourceRow): Promise<{ inserted: number; error?: st
     let items: ParsedItem[] = [];
     if (src.kind === "rss") {
       items = await fetchRss(src.url);
+    } else if (src.kind === "rss_filtered") {
+      const sel = src.selector as RssFilteredSelector | null;
+      if (!sel?.byline_regex) {
+        throw new Error("rss_filtered source missing byline_regex selector");
+      }
+      const all = await fetchRss(src.url);
+      items = filterByByline(all, sel.byline_regex);
     } else {
       if (!src.selector) throw new Error("scrape source missing selector");
-      items = await scrapeSource(src.url, src.selector);
+      items = await scrapeSource(src.url, src.selector as ScrapeSelectors);
     }
     const rows = normalizeToArticleRows(items, src);
     if (rows.length === 0) return { inserted: 0 };

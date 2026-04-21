@@ -10,6 +10,7 @@ export type ParsedItem = {
   link: string;
   summary: string | null;
   date: string | null; // ISO 8601 or null
+  author: string | null;
 };
 
 const decode = (s: string): string =>
@@ -55,6 +56,10 @@ export function parseFeed(xml: string): ParsedItem[] {
     const link = firstTag(block, "link") ?? "";
     const pubDate = firstTag(block, "pubDate") ?? firstTag(block, "dc:date");
     const description = firstTag(block, "description") ?? firstTag(block, "content:encoded");
+    const author =
+      firstTag(block, "dc:creator") ??
+      firstTag(block, "author") ??
+      firstTag(block, "itunes:author");
     const cleanTitle = stripHtml(title);
     const cleanLink = stripHtml(link);
     if (!cleanTitle || !cleanLink) continue;
@@ -63,6 +68,7 @@ export function parseFeed(xml: string): ParsedItem[] {
       link: cleanLink,
       summary: description ? stripHtml(description) : null,
       date: toIso(pubDate),
+      author: author ? stripHtml(author) : null,
     });
   }
 
@@ -79,6 +85,8 @@ export function parseFeed(xml: string): ParsedItem[] {
       firstTag(block, "published") ??
       firstTag(block, "issued");
     const summary = firstTag(block, "summary") ?? firstTag(block, "content");
+    const authorBlock = firstTag(block, "author");
+    const author = authorBlock ? (firstTag(authorBlock, "name") ?? authorBlock) : null;
     const cleanTitle = stripHtml(title);
     const cleanLink = stripHtml(link);
     if (!cleanTitle || !cleanLink) continue;
@@ -87,6 +95,7 @@ export function parseFeed(xml: string): ParsedItem[] {
       link: cleanLink,
       summary: summary ? stripHtml(summary) : null,
       date: toIso(date),
+      author: author ? stripHtml(author) : null,
     });
   }
 
