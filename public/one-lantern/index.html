@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>One Lantern</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; background: #020308; color: #e8ddc8;
+    font-family: ui-monospace, 'Cascadia Mono', Menlo, monospace;
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  }
+  #stage { position: relative; }
+  canvas {
+    display: block; max-width: 100vw; max-height: 86vh;
+    image-rendering: auto; touch-action: manipulation;
+  }
+  #overlay {
+    position: absolute; inset: 0; display: none;
+    align-items: center; justify-content: center;
+    background: rgba(2, 3, 8, 0.82); backdrop-filter: blur(2px);
+  }
+  .panel { text-align: center; max-width: 420px; padding: 18px; }
+  .panel h1 {
+    font-weight: 400; letter-spacing: 0.35em; color: #ffd98f; margin: 0 0 6px;
+    text-shadow: 0 0 18px rgba(255, 200, 110, 0.55);
+  }
+  .panel h1.dark { color: #8d7fb5; text-shadow: 0 0 18px rgba(120, 90, 190, 0.5); }
+  .sub { color: #9d937f; font-size: 12px; margin: 6px 0 14px; line-height: 1.6; }
+  .keys { color: #6d6557; font-size: 11px; margin-top: 18px; }
+  .keys b { color: #b8ab8e; }
+  .panel button {
+    display: block; width: 100%; margin: 8px 0; padding: 12px;
+    background: transparent; color: #ffd98f; cursor: pointer;
+    border: 1px solid rgba(255, 200, 110, 0.35); border-radius: 4px;
+    font: inherit; letter-spacing: 0.2em;
+  }
+  .panel button:hover { background: rgba(255, 200, 110, 0.08); box-shadow: 0 0 14px rgba(255, 200, 110, 0.25); }
+  .oils { display: flex; gap: 8px; }
+  .oils .oil { letter-spacing: 0; padding: 10px 8px; }
+  .oils .oil b { display: block; font-size: 12px; margin-bottom: 6px; }
+  .oils .oil span { font-size: 10px; color: #9d937f; line-height: 1.4; }
+  .ghostbtn { opacity: 0.45; }
+  #pad {
+    display: flex; gap: 8px; justify-content: center; padding: 8px 0 14px;
+  }
+  #pad button {
+    background: transparent; border: 1px solid rgba(255, 200, 110, 0.25);
+    color: #d8c9a4; border-radius: 4px; font: inherit; font-size: 11px;
+    padding: 8px 14px; cursor: pointer; letter-spacing: 0.1em;
+  }
+  #pad button:active { background: rgba(255, 200, 110, 0.12); }
+</style>
+</head>
+<body>
+  <div id="stage">
+    <canvas id="board"></canvas>
+    <div id="pad">
+      <button data-act="flare">✸ flare</button>
+      <button data-act="dim">◐ dim</button>
+      <button data-act="brighten">◑ brighten</button>
+      <button data-act="wait">· wait</button>
+    </div>
+    <div id="overlay"></div>
+  </div>
+  <script src="engine.js"></script>
+  <script src="render.js"></script>
+  <script src="audio.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
